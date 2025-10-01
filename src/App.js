@@ -58,6 +58,15 @@ function App() {
   const handleUnMute = () => postToIframe({ message: 'unMuteAudio' });
   const handleTerminateSession = () => postToIframe({ message: 'terminateSession' });
 
+
+
+    const handlescreenshot =() =>{
+      
+      postToIframe({ message: 'requestScreenshot' })
+    
+    };
+
+
     const enableMouseHover = () =>  postToIframe({ message: { value: true, type: 'togglehoveringmouse' } });
 
     const disableMouseHover = () =>  postToIframe({ message: { value: false, type: 'togglehoveringmouse' } });
@@ -122,6 +131,9 @@ function App() {
 
 
           <button onClick={handleTerminateSession}>Disconnect</button>
+
+                    <button onClick={handlescreenshot}>Take Screenshot</button>
+
 
             <button onClick={handleDisconnectChat}>Disconnect Chat </button>
 
