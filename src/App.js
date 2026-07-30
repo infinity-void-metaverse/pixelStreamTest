@@ -126,8 +126,7 @@ function App() {
 
   const [composerMode, setComposerMode] = useState('form');
   const [formFields, setFormFields] = useState([
-    { id: 1, name: 'type', value: 'setResolution' },
-    { id: 2, name: 'value', value: '720p (1280x720)' },
+    { id: 1, name: 'message', value: 'test message' },
   ]);
   const [composerText, setComposerText] = useState('');
 
@@ -224,11 +223,11 @@ function App() {
     }
   }, [composerText]);
 
-  // Exactly what Send will post. Form mode always wraps the fields in the
-  // { message: … } envelope; JSON mode sends the text verbatim.
+  // Exactly what Send will post. Form fields build the payload directly;
+  // JSON mode sends the text verbatim.
   const currentPayload = useMemo(() => {
     if (composerMode === 'form') {
-      return { message: formObject };
+      return formObject;
     }
     const text = composerText.trim();
     if (!text) return null;
@@ -290,25 +289,18 @@ function App() {
   const switchToJson = () => {
     if (composerMode === 'json') return;
     if (formFields.some((f) => f.name.trim())) {
-      setComposerText(JSON.stringify({ message: formObject }, null, 2));
+      setComposerText(JSON.stringify(formObject, null, 2));
     }
     setComposerMode('json');
   };
-
-  const isPlainObject = (v) => v && typeof v === 'object' && !Array.isArray(v);
 
   const switchToForm = () => {
     if (composerMode === 'form') return;
     try {
       const parsed = JSON.parse(composerText);
-      // Fields represent the object inside the { message: … } envelope.
-      const inner =
-        isPlainObject(parsed) && Object.keys(parsed).length === 1 && isPlainObject(parsed.message)
-          ? parsed.message
-          : parsed;
-      if (isPlainObject(inner)) {
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
         setFormFields(
-          Object.entries(inner).map(([name, value]) => ({
+          Object.entries(parsed).map(([name, value]) => ({
             id: nextFieldId++,
             name,
             value: fieldValueToText(value),
