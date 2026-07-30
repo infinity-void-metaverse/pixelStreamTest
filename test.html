@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>StreamPixel Fullscreen Stream</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: Arial, sans-serif;
+    }
+
+    #logo {
+      position: fixed;
+      top: 12px;
+      left: 12px;
+      width: 96px;
+      z-index: 10000;
+    }
+
+    #loadingScreen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: black;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+      flex-direction: column;
+    }
+
+    #loadingVideo, #loadingImage {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    #loadingImage {
+      display: none;
+    }
+
+    #queueStatus {
+      position: fixed;
+      bottom: 10px;
+      left: 10px;
+      color: white;
+      background: rgba(0, 0, 0, 0.5);
+      padding: 6px 10px;
+      border-radius: 4px;
+      font-size: 14px;
+      z-index: 1001;
+      display: none;
+    }
+
+    #loadingState {
+      position: fixed;
+      text-align: center;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: white;
+      background: rgba(0, 0, 0, 0.5);
+      padding: 6px 10px;
+      border-radius: 4px;
+      font-size: 14px;
+      z-index: 1001;
+      display: none;
+    }
+
+    #passwordScreen {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 1002;
+    }
+
+    #passwordForm input {
+      padding: 8px;
+      margin: 10px;
+      font-size: 16px;
+    }
+
+    #passwordForm button {
+      padding: 8px 16px;
+      font-size: 16px;
+    }
+
+    iframe {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      border: none;
+      z-index: 1;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="logo">
+    <img src="https://www.adaptivewfs.com/wp-content/uploads/2020/07/logo-placeholder-image.png" width="100%">
+  </div>
+
+  <div id="loadingScreen">
+    <video id="loadingVideo" autoplay muted playsinline>
+      <source src="https://videos.pexels.com/video-files/3163534/3163534-uhd_2560_1440_30fps.mp4" type="video/mp4" />
+    </video>
+    <img id="loadingImage" src="https://images.pexels.com/videos/28713349/pexels-photo-28713349.jpeg" alt="Loading..." />
+    
+    <div id="loadingState"></div>
+
+    <div id="passwordScreen">
+      <form id="passwordForm">
+        <input type="text" id="passwordInput" placeholder="Password" />
+        <button type="submit">Submit</button>
+      </form>
+    </div>
+  </div>
+
+  <div id="queueStatus"></div>
+
+  <iframe
+    id="streamPixelIframe"
+    src="https://stream.streampixel.io/68879414114d201dd5219b40"
+    allow="autoplay; microphone; camera"
+    title="StreamPixel Stream"
+  ></iframe>
+
+  <script>
+    const loadingScreen = document.getElementById('loadingScreen');
+    const loadingState = document.getElementById('loadingState');
+    const queueStatus = document.getElementById('queueStatus');
+    const loadingVideo = document.getElementById('loadingVideo');
+    const loadingImage = document.getElementById('loadingImage');
+    const passwordScreen = document.getElementById('passwordScreen');
+    const passwordForm = document.getElementById('passwordForm');
+    const passwordInput = document.getElementById('passwordInput');
+    const iframe = document.getElementById('streamPixelIframe');
+
+    loadingVideo.onerror = () => {
+      loadingImage.style.display = 'block';
+      loadingVideo.style.display = 'none';
+    };
+
+    function showLoadingText(message) {
+      loadingState.textContent = message;
+      loadingState.style.display = 'block';
+    }
+
+    function hideLoadingText() {
+      loadingState.textContent = '';
+      loadingState.style.display = 'none';
+    }
+
+    function showQueueMessage(message) {
+      queueStatus.textContent = message;
+      queueStatus.style.display = 'block';
+    }
+
+    function hideQueueMessage() {
+      queueStatus.textContent = '';
+      queueStatus.style.display = 'none';
+    }
+
+    passwordForm.addEventListener('submit', function(e) {
+      e.preventDefault();
+
+      const enteredPassword = passwordInput.value;
+      iframe.contentWindow.postMessage({
+        message: 'passwordSubmit',
+        password: enteredPassword,
+        projectId: '67cc3f1d5b4e247cfd8f45b4'
+      }, '*');
+      
+      setTimeout(() => {
+      iframeRef.current?.focus();
+    }, 100); 
+    
+    });
+
+    window.addEventListener('message', (event) => {
+      if (!event.data || typeof event.data.value !== 'string') return;
+
+      const value = event.data.value;
+
+      if (value === 'showPassword') {
+        passwordScreen.style.display = 'flex';
+      } else if (value === 'hidePassword') {
+        passwordScreen.style.display = 'none';
+        loadingScreen.style.display = 'flex';
+      } else if (value === 'authenticating') {
+        showLoadingText("Authenticating...");
+        hideQueueMessage();
+      } else if (value === 'connecting') {
+        showLoadingText("Connecting to the stream...");
+        hideQueueMessage();
+      } else if (value === 'Almost there, hold tight- awesomeness loading') {
+        showLoadingText("Almost there, awesomeness is loading...");
+        hideQueueMessage();
+      } else if (value === 'finalising') {
+        showLoadingText("Finalising connection...");
+        hideQueueMessage();
+      } else if (value.includes("queue")) {
+        hideLoadingText();
+        showQueueMessage(value);
+      } else if (value === 'loadingComplete') {
+        hideLoadingText();
+        hideQueueMessage();
+        loadingScreen.style.display = 'none';
+      }
+    });
+  </script>
+</body>
+</html>

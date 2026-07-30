@@ -126,20 +126,14 @@ function App() {
           <button onClick={handleUnMute}>UnMute</button>
 
             <button onClick={enableMouseHover}>Enable Mouse Hover</button>
-
-              <button onClick={disableMouseHover}>Disable Mouse Hover</button>
+          <button onClick={disableMouseHover}>Disable Mouse Hover</button>
 
 
           <button onClick={handleTerminateSession}>Disconnect</button>
 
-                    <button onClick={handlescreenshot}>Take Screenshot</button>
-
-
-            <button onClick={handleDisconnectChat}>Disconnect Chat </button>
-
-</div>
-          {/* Custom message input and send button */}
-          <div style={{ marginTop: '10px' }}>
+          <button onClick={handlescreenshot}>Take Screenshot</button>
+          <button onClick={handleDisconnectChat}>Disconnect Chat</button>
+           <div style={{ marginTop: '10px' }}>
             <input
               type="text"
               value={customMessage}
@@ -151,6 +145,10 @@ function App() {
               Send Message
             </button>
           </div>
+
+</div>
+          {/* Custom message input and send button */}
+         
         </>
       ) : (
         <form onSubmit={handleSubmit}>
