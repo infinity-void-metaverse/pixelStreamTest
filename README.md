@@ -1,3 +1,19 @@
+# StreamPixel Embed Tester
+
+A testing console for StreamPixel iframe embeds. Paste a stream URL to embed it, then send any postMessage payload to it and watch every message it sends back.
+
+## Features
+
+- **Presets** — one-click buttons for the common commands (resolution, mute/unmute, mouse hover, chat/comms, screenshot, terminate). The ✎ button next to each preset opens its payload in the composer so you can tweak it before sending.
+- **Composer** — send *any* payload: valid JSON is sent as an object; anything else is sent as a plain string. Optionally auto-wrap the payload in `{ "message": … }`. Ctrl/Cmd+Enter sends.
+- **Log** — every sent and received message with timestamps, copy and re-send buttons.
+- **Shareable links** — the stream URL is kept in `?url=…`, so you can send testers a prefilled link (there's a Copy Share Link button in the top bar).
+- **Echo test page** — `public/echo.html` simulates a stream: it sends `loadingComplete` on load and echoes back everything it receives. Use it to try the tester without a live stream (button on the landing screen).
+
+The app still auto-sends `startApp` 5 s after the iframe is embedded and a `heartbeat` every 10 minutes.
+
+---
+
 # Getting Started with Create React App
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).

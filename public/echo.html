@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>postMessage Echo Test Page</title>
+  <style>
+    body {
+      background: #101623;
+      color: #8fe3c0;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      padding: 24px;
+      font-size: 13px;
+    }
+    h2 { color: #e6e9ef; font-family: -apple-system, sans-serif; margin: 0 0 4px; }
+    p { color: #9aa3b2; font-family: -apple-system, sans-serif; margin: 0 0 16px; }
+    pre { white-space: pre-wrap; word-break: break-word; }
+  </style>
+</head>
+<body>
+  <h2>postMessage Echo Test Page</h2>
+  <p>Simulates an embedded stream: sends <code>loadingComplete</code> on load and echoes back every message it receives.</p>
+  <pre id="out"></pre>
+  <script>
+    const out = document.getElementById('out');
+    window.addEventListener('message', (e) => {
+      out.textContent += '← ' + JSON.stringify(e.data) + '\n';
+      parent.postMessage({ value: 'echo', received: e.data }, '*');
+    });
+    setTimeout(() => parent.postMessage({ value: 'loadingComplete' }, '*'), 800);
+  </script>
+</body>
+</html>
