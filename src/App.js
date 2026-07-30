@@ -130,7 +130,6 @@ function App() {
     { id: 2, name: 'value', value: '720p (1280x720)' },
   ]);
   const [composerText, setComposerText] = useState('');
-  const [wrapInMessage, setWrapInMessage] = useState(true);
 
   const addLog = useCallback((dir, data, note) => {
     setLog((prev) => [
@@ -225,22 +224,20 @@ function App() {
     }
   }, [composerText]);
 
-  // Exactly what Send will post, in either mode.
+  // Exactly what Send will post. Form mode always wraps the fields in the
+  // { message: … } envelope; JSON mode sends the text verbatim.
   const currentPayload = useMemo(() => {
-    let payload;
     if (composerMode === 'form') {
-      payload = formObject;
-    } else {
-      const text = composerText.trim();
-      if (!text) return null;
-      try {
-        payload = JSON.parse(text);
-      } catch {
-        payload = text;
-      }
+      return { message: formObject };
     }
-    return wrapInMessage ? { message: payload } : payload;
-  }, [composerMode, formObject, composerText, wrapInMessage]);
+    const text = composerText.trim();
+    if (!text) return null;
+    try {
+      return JSON.parse(text);
+    } catch {
+      return text;
+    }
+  }, [composerMode, formObject, composerText]);
 
   const canSend =
     composerMode === 'form'
@@ -286,7 +283,6 @@ function App() {
 
   const handlePresetEdit = (preset) => {
     setComposerText(JSON.stringify(resolvePayload(preset), null, 2));
-    setWrapInMessage(false);
     setComposerMode('json');
     setActiveTab('composer');
   };
@@ -294,18 +290,25 @@ function App() {
   const switchToJson = () => {
     if (composerMode === 'json') return;
     if (formFields.some((f) => f.name.trim())) {
-      setComposerText(JSON.stringify(formObject, null, 2));
+      setComposerText(JSON.stringify({ message: formObject }, null, 2));
     }
     setComposerMode('json');
   };
+
+  const isPlainObject = (v) => v && typeof v === 'object' && !Array.isArray(v);
 
   const switchToForm = () => {
     if (composerMode === 'form') return;
     try {
       const parsed = JSON.parse(composerText);
-      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+      // Fields represent the object inside the { message: … } envelope.
+      const inner =
+        isPlainObject(parsed) && Object.keys(parsed).length === 1 && isPlainObject(parsed.message)
+          ? parsed.message
+          : parsed;
+      if (isPlainObject(inner)) {
         setFormFields(
-          Object.entries(parsed).map(([name, value]) => ({
+          Object.entries(inner).map(([name, value]) => ({
             id: nextFieldId++,
             name,
             value: fieldValueToText(value),
@@ -531,15 +534,6 @@ function App() {
                     </div>
                   </>
                 )}
-
-                <label className="composer-wrap">
-                  <input
-                    type="checkbox"
-                    checked={wrapInMessage}
-                    onChange={(e) => setWrapInMessage(e.target.checked)}
-                  />
-                  Wrap payload in <code>{'{ "message": … }'}</code>
-                </label>
 
                 <div className="payload-preview">
                   <div className="preview-label">Will send</div>

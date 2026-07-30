@@ -513,14 +513,6 @@ code {
   color: var(--text-dim);
 }
 
-.composer-wrap {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 12px;
-  color: var(--text-dim);
-}
-
 .send-button {
   background: var(--accent);
   border: none;
