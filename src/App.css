@@ -32,6 +32,34 @@ body {
 button {
   font: inherit;
   cursor: pointer;
+  transition: color 0.15s, border-color 0.15s, background-color 0.15s, opacity 0.15s;
+}
+
+input,
+textarea {
+  transition: border-color 0.15s;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 5px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #3a4150;
+  background-clip: content-box;
+  border: 2px solid transparent;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
 }
 
 code {
@@ -205,7 +233,7 @@ code {
 /* ---------- Panel ---------- */
 
 .panel {
-  width: 380px;
+  width: 400px;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
@@ -312,16 +340,147 @@ code {
 .composer {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
 }
 
-.composer-label {
-  font-size: 12px;
+.segmented {
+  display: flex;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 3px;
+  gap: 3px;
+}
+
+.segmented button {
+  flex: 1;
+  background: none;
+  border: none;
+  border-radius: 6px;
   color: var(--text-dim);
+  padding: 7px 0;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.segmented button.active {
+  background: var(--accent);
+  color: #fff;
+}
+
+.segmented button:not(.active):hover {
+  color: var(--text);
+}
+
+.form-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-fields-head {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr 28px;
+  gap: 8px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-dim);
+  padding: 0 2px;
+}
+
+.field-row {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr 28px;
+  gap: 8px;
+  align-items: center;
+}
+
+.field-row input {
+  min-width: 0;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  color: var(--text);
+  padding: 8px 10px;
+  font-size: 13px;
+}
+
+.field-row input.field-value {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+.field-row input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.field-remove {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  color: var(--text-dim);
+  height: 34px;
+  font-size: 15px;
+  line-height: 1;
+}
+
+.field-remove:hover {
+  color: var(--red);
+  border-color: var(--red);
+}
+
+.add-field {
+  background: none;
+  border: 1px dashed var(--border);
+  border-radius: 7px;
+  color: var(--text-dim);
+  padding: 8px;
+  font-size: 13px;
+}
+
+.add-field:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.composer-note {
+  margin: 0;
+  font-size: 11px;
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+
+.payload-preview {
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.preview-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-dim);
+  padding: 6px 10px 0;
+}
+
+.payload-preview pre {
+  margin: 0;
+  padding: 6px 10px 10px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--green);
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 180px;
+  overflow-y: auto;
 }
 
 .composer textarea {
-  min-height: 220px;
+  min-height: 160px;
   resize: vertical;
   background: var(--panel-2);
   border: 1px solid var(--border);

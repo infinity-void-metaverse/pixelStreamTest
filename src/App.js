@@ -65,12 +65,6 @@ const PRESET_GROUPS = [
   },
 ];
 
-const DEFAULT_COMPOSER_TEXT = JSON.stringify(
-  { message: { type: 'setResolution', value: '720p (1280x720)' } },
-  null,
-  2
-);
-
 const resolvePayload = (preset) =>
   typeof preset.payload === 'function' ? preset.payload() : preset.payload;
 
@@ -83,7 +77,34 @@ const formatData = (data) => {
   }
 };
 
+// Form-mode values auto-detect booleans, null, numbers and JSON.
+// Wrap in double quotes to force a literal string.
+const parseFieldValue = (raw) => {
+  const t = raw.trim();
+  if (t === 'true') return true;
+  if (t === 'false') return false;
+  if (t === 'null') return null;
+  if (/^-?\d+(\.\d+)?$/.test(t)) return Number(t);
+  if (t[0] === '{' || t[0] === '[' || t[0] === '"') {
+    try {
+      return JSON.parse(t);
+    } catch {
+      return raw;
+    }
+  }
+  return raw;
+};
+
+// Turn a parsed value back into form-input text so the field round-trips.
+const fieldValueToText = (value) => {
+  if (typeof value === 'string') {
+    return parseFieldValue(value) === value ? value : JSON.stringify(value);
+  }
+  return JSON.stringify(value);
+};
+
 let nextLogId = 1;
+let nextFieldId = 3;
 
 function App() {
   const iframeRef = useRef(null);
@@ -101,9 +122,15 @@ function App() {
   const [activeTab, setActiveTab] = useState('presets');
   const [log, setLog] = useState([]);
   const [seenLogCount, setSeenLogCount] = useState(0);
-  const [composerText, setComposerText] = useState(DEFAULT_COMPOSER_TEXT);
-  const [wrapInMessage, setWrapInMessage] = useState(false);
   const [copied, setCopied] = useState(false);
+
+  const [composerMode, setComposerMode] = useState('form');
+  const [formFields, setFormFields] = useState([
+    { id: 1, name: 'type', value: 'setResolution' },
+    { id: 2, name: 'value', value: '720p (1280x720)' },
+  ]);
+  const [composerText, setComposerText] = useState('');
+  const [wrapInMessage, setWrapInMessage] = useState(true);
 
   const addLog = useCallback((dir, data, note) => {
     setLog((prev) => [
@@ -178,7 +205,16 @@ function App() {
 
   const unreadCount = activeTab === 'log' ? 0 : log.length - seenLogCount;
 
-  const composerStatus = useMemo(() => {
+  // The object built from the form rows (before optional wrapping).
+  const formObject = useMemo(() => {
+    const obj = {};
+    formFields.forEach((f) => {
+      if (f.name.trim()) obj[f.name.trim()] = parseFieldValue(f.value);
+    });
+    return obj;
+  }, [formFields]);
+
+  const jsonStatus = useMemo(() => {
     const text = composerText.trim();
     if (!text) return { kind: 'empty', label: 'Type a JSON payload or plain string' };
     try {
@@ -188,6 +224,35 @@ function App() {
       return { kind: 'string', label: 'Not valid JSON — sent as a plain string' };
     }
   }, [composerText]);
+
+  // Exactly what Send will post, in either mode.
+  const currentPayload = useMemo(() => {
+    let payload;
+    if (composerMode === 'form') {
+      payload = formObject;
+    } else {
+      const text = composerText.trim();
+      if (!text) return null;
+      try {
+        payload = JSON.parse(text);
+      } catch {
+        payload = text;
+      }
+    }
+    return wrapInMessage ? { message: payload } : payload;
+  }, [composerMode, formObject, composerText, wrapInMessage]);
+
+  const canSend =
+    composerMode === 'form'
+      ? formFields.some((f) => f.name.trim() !== '')
+      : composerText.trim() !== '';
+
+  const previewText = useMemo(() => {
+    if (!canSend || currentPayload === null) return 'Nothing to send yet';
+    return typeof currentPayload === 'string'
+      ? currentPayload
+      : JSON.stringify(currentPayload, null, 2);
+  }, [canSend, currentPayload]);
 
   const loadUrl = (url) => {
     setIframeUrl(url);
@@ -221,20 +286,52 @@ function App() {
 
   const handlePresetEdit = (preset) => {
     setComposerText(JSON.stringify(resolvePayload(preset), null, 2));
+    setWrapInMessage(false);
+    setComposerMode('json');
     setActiveTab('composer');
   };
 
-  const handleComposerSend = () => {
-    const text = composerText.trim();
-    if (!text) return;
-    let payload;
-    try {
-      payload = JSON.parse(text);
-    } catch {
-      payload = text;
+  const switchToJson = () => {
+    if (composerMode === 'json') return;
+    if (formFields.some((f) => f.name.trim())) {
+      setComposerText(JSON.stringify(formObject, null, 2));
     }
-    if (wrapInMessage) payload = { message: payload };
-    postToIframe(payload);
+    setComposerMode('json');
+  };
+
+  const switchToForm = () => {
+    if (composerMode === 'form') return;
+    try {
+      const parsed = JSON.parse(composerText);
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+        setFormFields(
+          Object.entries(parsed).map(([name, value]) => ({
+            id: nextFieldId++,
+            name,
+            value: fieldValueToText(value),
+          }))
+        );
+      }
+    } catch {
+      // Text isn't a JSON object — keep the existing form fields.
+    }
+    setComposerMode('form');
+  };
+
+  const handleFieldChange = (id, key, text) => {
+    setFormFields((prev) => prev.map((f) => (f.id === id ? { ...f, [key]: text } : f)));
+  };
+
+  const handleFieldRemove = (id) => {
+    setFormFields((prev) => prev.filter((f) => f.id !== id));
+  };
+
+  const handleFieldAdd = () => {
+    setFormFields((prev) => [...prev, { id: nextFieldId++, name: '', value: '' }]);
+  };
+
+  const handleComposerSend = () => {
+    if (canSend && currentPayload !== null) postToIframe(currentPayload);
   };
 
   const handleComposerKeyDown = (e) => {
@@ -252,7 +349,7 @@ function App() {
     return (
       <div className="landing">
         <div className="landing-card">
-          <h1>StreamPixel Embed Tester</h1>
+          <h1>Streampixel Embed Tester</h1>
           <p>
             Paste a stream URL to embed it in an iframe. Then send any postMessage
             payload to it — presets, or your own JSON — and watch every message it
@@ -282,7 +379,7 @@ function App() {
   return (
     <div className="app">
       <header className="topbar">
-        <span className="brand">StreamPixel Embed Tester</span>
+        <span className="brand">Streampixel Embed Tester</span>
         <span className={`status status-${streamStatus}`}>
           {streamStatus === 'loaded' ? 'Loaded' : 'Connecting…'}
         </span>
@@ -361,19 +458,80 @@ function App() {
 
             {activeTab === 'composer' && (
               <div className="tab-content composer">
-                <label className="composer-label" htmlFor="composer-input">
-                  Payload (any JSON, or a plain string)
-                </label>
-                <textarea
-                  id="composer-input"
-                  value={composerText}
-                  onChange={(e) => setComposerText(e.target.value)}
-                  onKeyDown={handleComposerKeyDown}
-                  spellCheck={false}
-                />
-                <div className={`composer-status ${composerStatus.kind}`}>
-                  {composerStatus.label}
+                <div className="segmented">
+                  <button
+                    className={composerMode === 'form' ? 'active' : ''}
+                    onClick={switchToForm}
+                  >
+                    Form
+                  </button>
+                  <button
+                    className={composerMode === 'json' ? 'active' : ''}
+                    onClick={switchToJson}
+                  >
+                    Advanced (JSON)
+                  </button>
                 </div>
+
+                {composerMode === 'form' ? (
+                  <>
+                    <div className="form-fields">
+                      <div className="form-fields-head">
+                        <span>Field</span>
+                        <span>Value</span>
+                        <span />
+                      </div>
+                      {formFields.map((field) => (
+                        <div key={field.id} className="field-row">
+                          <input
+                            type="text"
+                            value={field.name}
+                            placeholder="name"
+                            onChange={(e) => handleFieldChange(field.id, 'name', e.target.value)}
+                            onKeyDown={handleComposerKeyDown}
+                          />
+                          <input
+                            type="text"
+                            className="field-value"
+                            value={field.value}
+                            placeholder="value"
+                            onChange={(e) => handleFieldChange(field.id, 'value', e.target.value)}
+                            onKeyDown={handleComposerKeyDown}
+                          />
+                          <button
+                            className="field-remove"
+                            title="Remove field"
+                            onClick={() => handleFieldRemove(field.id)}
+                          >
+                            ×
+                          </button>
+                        </div>
+                      ))}
+                      <button className="add-field" onClick={handleFieldAdd}>
+                        + Add Field
+                      </button>
+                    </div>
+                    <p className="composer-note">
+                      Values auto-detect numbers, booleans and JSON — use{' '}
+                      <code>"quotes"</code> to force text.
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <textarea
+                      id="composer-input"
+                      value={composerText}
+                      onChange={(e) => setComposerText(e.target.value)}
+                      onKeyDown={handleComposerKeyDown}
+                      placeholder='{ "message": { "type": "…", "value": "…" } }'
+                      spellCheck={false}
+                    />
+                    <div className={`composer-status ${jsonStatus.kind}`}>
+                      {jsonStatus.label}
+                    </div>
+                  </>
+                )}
+
                 <label className="composer-wrap">
                   <input
                     type="checkbox"
@@ -382,11 +540,13 @@ function App() {
                   />
                   Wrap payload in <code>{'{ "message": … }'}</code>
                 </label>
-                <button
-                  className="send-button"
-                  onClick={handleComposerSend}
-                  disabled={composerStatus.kind === 'empty'}
-                >
+
+                <div className="payload-preview">
+                  <div className="preview-label">Will send</div>
+                  <pre>{previewText}</pre>
+                </div>
+
+                <button className="send-button" onClick={handleComposerSend} disabled={!canSend}>
                   Send Message
                 </button>
                 <p className="composer-hint">Ctrl/Cmd + Enter to send</p>

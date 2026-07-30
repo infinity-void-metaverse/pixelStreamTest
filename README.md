@@ -1,11 +1,11 @@
-# StreamPixel Embed Tester
+# Streampixel Embed Tester
 
-A testing console for StreamPixel iframe embeds. Paste a stream URL to embed it, then send any postMessage payload to it and watch every message it sends back.
+A testing console for Streampixel iframe embeds. Paste a stream URL to embed it, then send any postMessage payload to it and watch every message it sends back.
 
 ## Features
 
 - **Presets** — one-click buttons for the common commands (resolution, mute/unmute, mouse hover, chat/comms, screenshot, terminate). The ✎ button next to each preset opens its payload in the composer so you can tweak it before sending.
-- **Composer** — send *any* payload: valid JSON is sent as an object; anything else is sent as a plain string. Optionally auto-wrap the payload in `{ "message": … }`. Ctrl/Cmd+Enter sends.
+- **Composer** — send *any* payload, in two modes. **Form** mode: add field name/value rows and the JSON is built for you (values auto-detect numbers, booleans and JSON; quote a value to force text). **Advanced (JSON)** mode: write the payload yourself — valid JSON is sent as an object, anything else as a plain string. Both modes share a live "Will send" preview, an optional `{ "message": … }` wrapper, and Ctrl/Cmd+Enter to send. Switching modes carries your payload across.
 - **Log** — every sent and received message with timestamps, copy and re-send buttons.
 - **Shareable links** — the stream URL is kept in `?url=…`, so you can send testers a prefilled link (there's a Copy Share Link button in the top bar).
 - **Echo test page** — `public/echo.html` simulates a stream: it sends `loadingComplete` on load and echoes back everything it receives. Use it to try the tester without a live stream (button on the landing screen).
